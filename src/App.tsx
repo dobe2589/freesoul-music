@@ -141,7 +141,7 @@ export default function App() {
                   <span className="text-ink-soft text-xs md:text-base tracking-[0.5em] uppercase">音樂宇宙</span>
                   <p className="flex items-center gap-4 text-ink-soft opacity-70 text-[10px] md:text-xs">
                     <Star className="w-3 h-3 text-gold fill-gold" />
-                    將滑鼠移至地點以召喚守護者 · 點擊查看詳情
+                    <span>將滑鼠移至地點(或觸碰)以召喚守護者 · 再次點擊查看詳情</span>
                     <Star className="w-3 h-3 text-gold fill-gold" />
                   </p>
                 </motion.div>
@@ -153,6 +153,7 @@ export default function App() {
                   <div 
                     className="relative min-w-[1000px] md:min-w-0 w-full aspect-[1366/768] md:rounded-2xl overflow-hidden shadow-2xl border border-white/5 bg-cover bg-center transition-all duration-1000"
                     style={{ backgroundImage: `url('${mapBg}')` }}
+                    onClick={() => setHoveredLocationId(null)}
                   >
                     {/* Hit Areas */}
                     {locations.map((loc) => (
@@ -167,12 +168,24 @@ export default function App() {
                         }}
                         onMouseEnter={() => setHoveredLocationId(loc.id)}
                         onMouseLeave={() => setHoveredLocationId(null)}
-                        onClick={() => handleLocationClick(loc)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (hoveredLocationId === loc.id) {
+                            handleLocationClick(loc);
+                          } else {
+                            setHoveredLocationId(loc.id);
+                          }
+                        }}
                       >
                         <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(122,240,255,0.2)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
-                        <div className="absolute bottom-[105%] left-1/2 -translate-x-1/2 glass px-3 py-1.5 rounded text-[11px] opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-40 pointer-events-none flex items-center gap-2">
-                          {loc.underConstruction && <span>🔒</span>}
-                          {loc.name}
+                        <div className="absolute bottom-[105%] left-1/2 -translate-x-1/2 glass px-3 py-1.5 rounded text-[11px] opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-40 pointer-events-none flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            {loc.underConstruction && <span>🔒</span>}
+                            {loc.name}
+                          </div>
+                          {hoveredLocationId === loc.id && (
+                            <div className="text-[8px] text-accent font-bold animate-pulse">TAP AGAIN TO VIEW</div>
+                          )}
                         </div>
                       </div>
                     ))}
