@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=Inter:wght@300;400;600&family=JetBrains+Mono&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cinzel", serif;
+  --font-serif: "Noto Serif TC", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-bg-deep: #050214;
+  --color-ink: #e8ddff;
+  --color-ink-soft: #b9a8e3;
+  --color-accent: #7af0ff;
+  --color-accent-warm: #ff6b9d;
+  --color-gold: #ffd479;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-deep);
+    color: var(--color-ink);
+    font-family: var(--font-serif);
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(10, 4, 32, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(122, 240, 255, 0.2);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(122, 240, 255, 0.2);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(122, 240, 255, 0.4);
+  }
+}

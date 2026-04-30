@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreeSoul Music · 音樂宇宙</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-deep: #050214;
+    --bg-mid: #0a0420;
+    --ink: #e8ddff;
+    --ink-soft: #b9a8e3;
+    --accent: #7af0ff;
+    --accent-warm: #ff6b9d;
+    --gold: #ffd479;
+    --construction: #ffc933;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-family: 'Noto Serif TC', serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(80, 40, 140, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(20, 80, 140, 0.35) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(15, 5, 40, 1) 0%, var(--bg-deep) 100%);
+  }
+
+  .starfield { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star {
+    position: absolute; background: white; border-radius: 50%;
+    animation: twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+
+  .header {
+    position: relative; z-index: 5; text-align: center; padding: 50px 20px 20px;
+  }
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(28px, 5vw, 56px);
+    font-weight: 700; letter-spacing: 0.15em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--gold) 50%, var(--accent-warm) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 60px rgba(122, 240, 255, 0.5);
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: clamp(12px, 1.5vw, 16px);
+    color: var(--ink-soft); letter-spacing: 0.5em; text-indent: 0.5em;
+  }
+  .hint {
+    margin-top: 14px; font-size: 13px;
+    color: var(--ink-soft); opacity: 0.7; letter-spacing: 0.1em;
+  }
+  .hint::before, .hint::after {
+    content: '✦'; margin: 0 12px; color: var(--gold);
+  }
+
+  /* ===== 桌機版地圖 ===== */
+  .map-wrapper {
+    position: relative; z-index: 2;
+    max-width: 1400px; margin: 20px auto; padding: 20px;
+  }
+  .map-container {
+    position: relative; width: 100%;
+    aspect-ratio: 1366 / 768;
+    background-image: url('images/background.jpg');
+    background-size: cover; background-position: center;
+    border-radius: 16px; overflow: hidden;
+    box-shadow:
+      0 0 80px rgba(122, 240, 255, 0.15),
+      0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+
+  /* === 角色：預設隱藏，hover 才浮現 === */
+  .character-overlay {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                filter 0.3s ease;
+  }
+  .character-overlay.visible {
+    opacity: 1;
+  }
+  .character-overlay img {
+    width: 100%; height: auto; display: block;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.6))
+            drop-shadow(0 0 12px rgba(122, 240, 255, 0.3));
+    animation: float-gentle 4s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+  .character-overlay.visible img {
+    animation: appear-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+               float-gentle 4s ease-in-out infinite 0.6s;
+  }
+  @keyframes appear-bounce {
+    0% { transform: scale(0.3) translateY(20px); opacity: 0; }
+    60% { transform: scale(1.08) translateY(-4px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* === 點擊熱區 === */
+  .location {
+    position: absolute;
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    border-radius: 50%;
+  }
+  .location:not(.under-construction)::before {
+    content: '';
+    position: absolute; inset: -8%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(122, 240, 255, 0.4) 0%, transparent 65%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+  .location:not(.under-construction):hover::before {
+    opacity: 1;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+
+  .location-label {
+    position: absolute;
+    bottom: -22px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 4, 32, 0.92);
+    border: 1px solid rgba(122, 240, 255, 0.6);
+    color: var(--ink);
+    padding: 5px 14px; border-radius: 4px;
+    font-size: 13px; letter-spacing: 0.15em;
+    white-space: nowrap; font-weight: 500;
+    backdrop-filter: blur(6px);
+    pointer-events: none; opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(122, 240, 255, 0.2);
+    z-index: 5;
+  }
+  .location:hover .location-label {
+    opacity: 1; bottom: -32px;
+  }
+
+  .construction-badge {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-8deg);
+    background: var(--construction);
+    color: #1a1a1a;
+    font-family: 'Cinzel', sans-serif;
+    font-weight: 700;
+    font-size: clamp(7px, 0.8vw, 10px);
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    border: 2px solid #1a1a1a;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* ===== 手機版卡片網格 ===== */
+  .mobile-grid {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 0 16px 40px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .mobile-card {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    background: linear-gradient(135deg, rgba(40, 20, 80, 0.6), rgba(20, 10, 50, 0.8));
+    border: 1px solid rgba(122, 240, 255, 0.2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease;
+  }
+  .mobile-card:active { transform: scale(0.96); }
+  .mobile-card-bg {
+    position: absolute; inset: 0;
+    background-size: 400%;
+    opacity: 0.55;
+  }
+  .mobile-card-character {
+    position: absolute;
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    width: 78%; height: auto;
+    z-index: 2;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  }
+  .mobile-card-label {
+    position: absolute;
+    top: 8px; left: 8px; right: 8px;
+    z-index: 3;
+    background: rgba(5, 2, 20, 0.85);
+    color: var(--ink);
+    text-align: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(122, 240, 255, 0.3);
+  }
+  .mobile-card.under-construction .mobile-card-label {
+    background: rgba(255, 201, 51, 0.9);
+    color: #1a1a1a;
+    border-color: rgba(255, 201, 51, 0.6);
+  }
+  .mobile-card.under-construction::after {
+    content: '🔒';
+    position: absolute;
+    bottom: 8px; right: 8px;
+    font-size: 22px;
+    z-index: 3;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  }
+  .mobile-section-title {
+    display: none;
+    text-align: center;
+    margin: 30px 16px 16px;
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.3em;
+  }
+  .mobile-section-title::before, .mobile-section-title::after {
+    content: '─'; margin: 0 12px; color: var(--accent);
+  }
+
+  /* ===== 角色彈窗 ===== */
+  .character-stage {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(5, 2, 20, 0);
+    backdrop-filter: blur(0px);
+    pointer-events: none;
+    transition: background 0.5s ease, backdrop-filter 0.5s ease;
+  }
+  .character-stage.active {
+    background: rgba(5, 2, 20, 0.85);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+  }
+  .character-content {
+    position: relative;
+    display: flex; align-items: center;
+    gap: 60px;
+    max-width: 90vw; padding: 40px;
+    opacity: 0; transform: translateY(40px);
+    transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+  }
+  .character-stage.active .character-content {
+    opacity: 1; transform: translateY(0);
+  }
+  .character-image-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .character-image-wrap::before {
+    content: '';
+    position: absolute; inset: -20px;
+    background: radial-gradient(circle, rgba(122, 240, 255, 0.4) 0%, transparent 65%);
+    border-radius: 50%;
+    animation: aura 4s ease-in-out infinite;
+  }
+  @keyframes aura {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; }
+  }
+  .character-image {
+    position: relative;
+    width: clamp(240px, 32vw, 380px);
+    height: auto;
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .character-info {
+    max-width: 480px; color: var(--ink);
+  }
+  .character-info .place-tag {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .character-info h2 {
+    font-size: clamp(26px, 3.5vw, 42px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .character-info .divider {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+    margin-bottom: 20px;
+  }
+  .character-info .description {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--ink-soft);
+    margin-bottom: 30px;
+    letter-spacing: 0.05em;
+  }
+  .playlist-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    letter-spacing: 0.1em;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(255, 0, 0, 0.3);
+    transition: all 0.3s ease;
+  }
+  .playlist-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(255, 0, 0, 0.5);
+  }
+  .playlist-button.disabled {
+    background: linear-gradient(135deg, #555 0%, #333 100%);
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .playlist-button svg { width: 22px; height: 22px; }
+
+  .construction-info { text-align: center; padding: 20px; }
+  .construction-info .icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: wobble 2s ease-in-out infinite;
+  }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+  .construction-info h2 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(22px, 3vw, 36px);
+    color: var(--construction);
+    margin-bottom: 16px;
+    letter-spacing: 0.15em;
+  }
+  .construction-info p {
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 24px; right: 24px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+  }
+  .close-btn:hover {
+    background: rgba(255, 100, 100, 0.2);
+    border-color: rgba(255, 100, 100, 0.5);
+    transform: rotate(90deg);
+  }
+
+  /* 手機響應式 */
+  @media (max-width: 768px) {
+    .map-wrapper { display: none; }
+    .mobile-grid { display: grid; }
+    .mobile-section-title { display: block; }
+    .character-content {
+      flex-direction: column;
+      gap: 24px;
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .character-image { width: 220px; }
+    .character-info .divider { margin: 0 auto 20px; }
+    .character-info h2 { font-size: 26px; }
+    .character-info .description { font-size: 14px; line-height: 1.8; }
+  }
+
+  body { animation: fadeIn 1s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="starfield" id="starfield"></div>
+
+<header class="header">
+  <h1>FREESOUL MUSIC</h1>
+  <div class="subtitle">音 樂 宇 宙</div>
+  <div class="hint">將滑鼠移至地點以召喚守護者・點擊查看詳情</div>
+</header>
+
+<!-- 桌機版 -->
+<div class="map-wrapper">
+  <div class="map-container" id="mapContainer"></div>
+</div>
+
+<!-- 手機版 -->
+<div class="mobile-section-title">音 樂 之 地</div>
+<div class="mobile-grid" id="mobileGrid"></div>
+
+<!-- 彈窗 -->
+<div class="character-stage" id="characterStage">
+  <button class="close-btn" id="closeBtn" aria-label="關閉">✕</button>
+  <div class="character-content" id="characterContent"></div>
+</div>
+
+<script>
+/* ============================================
+   ✏️ 修改這裡的設定即可！
+   ============================================
+   hitArea = 點擊熱區 {x, y, w, h} 百分比
+   character = 角色 {x, y, width, image} 百分比
+   playlist = YouTube 播放清單網址（之後再補）
+============================================ */
+
+const LOCATIONS = [
+  // ===== 上排 =====
+  {
+    id: 'paper-world',
+    name: '紙箱天地',
+    nameEn: 'Paper Box World',
+    hitArea: { x: 14, y: 22, w: 22, h: 32 },
+    character: { x: 23, y: 22, width: 9, image: 'characters/paper-world.png' },
+    description: '在這方堆疊起的紙箱國度，每一片紙板都是夢想的疆界。輕快、童趣、無拘無束的旋律在此誕生，是最純真的快樂角落。',
+    playlist: ''
+  },
+  {
+    id: 'sealed-realm',
+    name: '神秘之地',
+    nameEn: 'Sealed Realm',
+    hitArea: { x: 38, y: 6, w: 8, h: 12 },
+    character: { x: 41, y: 8, width: 7, image: 'characters/sealed-realm.png' },
+    description: '封印於迷霧中的禁忌之地，紅瞳老者鎮守於此。奇詭、神祕、東方異色——只有命定之人才能窺見此地的旋律。',
+    playlist: ''
+  },
+  {
+    id: 'pure-utopia',
+    name: '純白烏托邦',
+    nameEn: 'Pure Utopia',
+    hitArea: { x: 56, y: 14, w: 12, h: 22 },
+    character: { x: 58, y: 16, width: 9, image: 'characters/pure-utopia.png' },
+    description: '在純白的霓虹深處，潛伏著機械之翼。賽博龐克、迷離電子、未來感濃厚的聲響，帶你穿越冰冷與情感的邊界。',
+    playlist: ''
+  },
+  {
+    id: 'cyber-island',
+    name: '電音遊樂園',
+    nameEn: 'Cyber Carnival',
+    hitArea: { x: 86, y: 18, w: 14, h: 24 },
+    character: { x: 84, y: 20, width: 8, image: 'characters/cyber-island.png' },
+    description: '霓虹摩天輪轉動不息，紫髮少女駐守唱盤。EDM、Future Bass、Synthwave——讓每一個音符都成為派對的火花。',
+    playlist: ''
+  },
+
+  // ===== 中排 =====
+  {
+    id: 'rock-island',
+    name: '搖滾叢林',
+    nameEn: 'Rock Jungle',
+    hitArea: { x: 9, y: 50, w: 16, h: 28 },
+    character: { x: 11, y: 52, width: 9, image: 'characters/rock-island.png' },
+    description: '熱帶叢林深處，巨型音響轟鳴。在這裡只有節奏與呼喊——搖滾、金屬、龐克，所有不羈靈魂的歸處。',
+    playlist: ''
+  },
+  {
+    id: 'bar-isle',
+    name: '吟遊酒館',
+    nameEn: 'Bardic Tavern',
+    hitArea: { x: 30, y: 48, w: 14, h: 22 },
+    character: { x: 32, y: 50, width: 8.5, image: 'characters/bar-isle.png' },
+    description: '昏黃燈下，威士忌晃動著故事。爵士、靈魂、藍調——讓沙啞的嗓音與煙霧一起，溶進深夜的時光。',
+    playlist: ''
+  },
+  {
+    id: 'data-tree',
+    name: '數據世界之樹',
+    nameEn: 'Data World Tree',
+    hitArea: { x: 50, y: 50, w: 22, h: 38 },
+    character: { x: 51, y: 52, width: 9, image: 'characters/data-tree.png' },
+    description: '世界的中心，連結所有音樂之地。在這裡，數據化作枝葉，旋律化作果實。所有故事的起點，也是所有旅程的歸途。',
+    playlist: ''
+  },
+
+  // ===== 下排 =====
+  {
+    id: 'hyakki-yakou',
+    name: '百鬼夜曲',
+    nameEn: 'Hyakki Yakou',
+    hitArea: { x: 9, y: 80, w: 18, h: 26 },
+    character: { x: 11, y: 82, width: 11, image: 'characters/hyakki-yakou.png' },
+    description: '紅燈籠下，妖狐與道士共飲。和風、神秘、節慶氛圍交織，每一個音符都像一場月夜下的祭典。',
+    playlist: ''
+  },
+  {
+    id: 'sanzu-river',
+    name: '三途川',
+    nameEn: 'Sanzu River',
+    hitArea: { x: 38, y: 78, w: 18, h: 24 },
+    character: { x: 41, y: 80, width: 8, image: 'characters/sanzu-river.png' },
+    description: '彼岸花綻放於幽暗之川，少女獨坐扁舟。哀愁、思念、靜謐的東方情調，是夜深人靜時最溫柔的低語。',
+    playlist: ''
+  },
+  {
+    id: 'broken-track',
+    name: '壞軌區',
+    nameEn: 'Broken Track Zone',
+    hitArea: { x: 60, y: 80, w: 18, h: 26 },
+    character: { x: 62, y: 79, width: 10, image: 'characters/broken-track.png' },
+    description: '霓虹街頭，扭曲節拍。當系統崩壞，音律以最狂野的姿態重生。電子搖滾、嘻哈、能量爆裂的曲目集結地。',
+    playlist: ''
+  },
+  {
+    id: 'mirror-void',
+    name: '鏡中虛空',
+    nameEn: 'Mirror Void',
+    hitArea: { x: 84, y: 80, w: 16, h: 26 },
+    character: { x: 84, y: 80, width: 11, image: 'characters/mirror-void.png' },
+    description: '黑色漩渦之中，鋼琴聲縈繞著彼岸花。古典、敘事、帶有戲劇張力的樂章在此流轉，是反思與沉澱的私密空間。',
+    playlist: ''
+  },
+
+  // ===== 右側中段 =====
+  {
+    id: 'headphone-isle',
+    name: '耳機之間',
+    nameEn: 'Headphone Room',
+    hitArea: { x: 76, y: 50, w: 14, h: 24 },
+    character: { x: 78, y: 53, width: 7, image: 'characters/headphone-isle.png' },
+    description: '巨大耳機罩下，少年抱著熊與夢一同沉睡。Lo-fi、Chill、輕音樂——讓世界的嘈雜暫時遠離，只剩下溫柔的呼吸聲。',
+    playlist: ''
+  },
+  {
+    id: 'piano-isle',
+    name: '鋼琴島',
+    nameEn: 'Piano Isle',
+    hitArea: { x: 91, y: 50, w: 14, h: 24 },
+    character: { x: 92, y: 52, width: 8.5, image: 'characters/piano-isle.png' },
+    description: '小小琴師指尖流淌出星河。古典鋼琴、純音樂、抒情敘事——每一個音符都是時光的標記，輕輕敲打心底最柔軟的角落。',
+    playlist: ''
+  }
+];
+
+/* ============== 星空 ============== */
+function createStarfield() {
+  const field = document.getElementById('starfield');
+  for (let i = 0; i < 80; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2 + 1;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    star.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    field.appendChild(star);
+  }
+}
+
+/* ============== 桌機版地圖 ============== */
+function createDesktopMap() {
+  const container = document.getElementById('mapContainer');
+
+  LOCATIONS.forEach(loc => {
+    // 角色（預設隱藏）
+    if (loc.character && !loc.underConstruction) {
+      const charDiv = document.createElement('div');
+      charDiv.className = 'character-overlay';
+      charDiv.dataset.id = loc.id;
+      charDiv.style.left = loc.character.x + '%';
+      charDiv.style.top = loc.character.y + '%';
+      charDiv.style.width = loc.character.width + '%';
+
+      const img = document.createElement('img');
+      img.src = loc.character.image;
+      img.alt = loc.name;
+      img.onerror = function() { this.parentElement.style.display = 'none'; };
+      charDiv.appendChild(img);
+      container.appendChild(charDiv);
+    }
+
+    // 點擊熱區
+    const el = document.createElement('div');
+    el.className = 'location' + (loc.underConstruction ? ' under-construction' : '');
+    el.style.left = (loc.hitArea.x + loc.hitArea.w / 2) + '%';
+    el.style.top = (loc.hitArea.y + loc.hitArea.h / 2) + '%';
+    el.style.width = loc.hitArea.w + '%';
+    el.style.height = loc.hitArea.h + '%';
+    el.dataset.id = loc.id;
+
+    if (loc.underConstruction) {
+      const badge = document.createElement('div');
+      badge.className = 'construction-badge';
+      badge.innerHTML = 'UNDER<br>CONSTRUCTION';
+      el.appendChild(badge);
+    } else {
+      const label = document.createElement('div');
+      label.className = 'location-label';
+      label.textContent = loc.name;
+      el.appendChild(label);
+    }
+
+    // hover → 顯示角色
+    el.addEventListener('mouseenter', () => {
+      const ch = container.querySelector(`.character-overlay[data-id="${loc.id}"]`);
+      if (ch) ch.classList.add('visible');
+    });
+    el.addEventListener('mouseleave', () => {
+      const ch = container.querySelector(`.character-overlay[data-id="${loc.id}"]`);
+      if (ch) ch.classList.remove('visible');
+    });
+
+    el.addEventListener('click', () => openLocation(loc));
+    container.appendChild(el);
+  });
+}
+
+/* ============== 手機版卡片 ============== */
+function createMobileGrid() {
+  const grid = document.getElementById('mobileGrid');
+
+  LOCATIONS.forEach(loc => {
+    const card = document.createElement('div');
+    card.className = 'mobile-card' + (loc.underConstruction ? ' under-construction' : '');
+    card.addEventListener('click', () => openLocation(loc));
+
+    const bg = document.createElement('div');
+    bg.className = 'mobile-card-bg';
+    bg.style.backgroundImage = `url('images/background.jpg')`;
+    bg.style.backgroundPosition = `${loc.hitArea.x + loc.hitArea.w/2}% ${loc.hitArea.y + loc.hitArea.h/2}%`;
+    card.appendChild(bg);
+
+    if (loc.character && !loc.underConstruction) {
+      const ch = document.createElement('img');
+      ch.className = 'mobile-card-character';
+      ch.src = loc.character.image;
+      ch.alt = loc.name;
+      ch.onerror = function() { this.style.display = 'none'; };
+      card.appendChild(ch);
+    }
+
+    const label = document.createElement('div');
+    label.className = 'mobile-card-label';
+    label.textContent = loc.name;
+    card.appendChild(label);
+
+    grid.appendChild(card);
+  });
+}
+
+/* ============== 彈窗 ============== */
+function openLocation(loc) {
+  const stage = document.getElementById('characterStage');
+  const content = document.getElementById('characterContent');
+
+  if (loc.underConstruction) {
+    content.innerHTML = `
+      <div class="construction-info">
+        <div class="icon">🔧</div>
+        <h2>UNDER CONSTRUCTION</h2>
+        <p>「${loc.name}」尚未開放<br>請耐心等待，新的旋律即將降臨...</p>
+      </div>
+    `;
+  } else {
+    const hasPlaylist = loc.playlist && loc.playlist.trim() !== '';
+    const buttonHtml = hasPlaylist
+      ? `<a class="playlist-button" href="${loc.playlist}" target="_blank" rel="noopener">
+           <svg viewBox="0 0 24 24" fill="currentColor">
+             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+           </svg>
+           前往 YouTube 播放清單
+         </a>`
+      : `<span class="playlist-button disabled">
+           <svg viewBox="0 0 24 24" fill="currentColor">
+             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+           </svg>
+           播放清單建設中
+         </span>`;
+
+    content.innerHTML = `
+      <div class="character-image-wrap">
+        <img class="character-image" src="${loc.character.image}" alt="${loc.name}">
+      </div>
+      <div class="character-info">
+        <div class="place-tag">${loc.nameEn || ''}</div>
+        <h2>${loc.name}</h2>
+        <div class="divider"></div>
+        <p class="description">${loc.description}</p>
+        ${buttonHtml}
+      </div>
+    `;
+  }
+
+  stage.classList.add('active');
+}
+
+function closeStage() {
+  document.getElementById('characterStage').classList.remove('active');
+}
+
+document.getElementById('closeBtn').addEventListener('click', closeStage);
+document.getElementById('characterStage').addEventListener('click', (e) => {
+  if (e.target.id === 'characterStage') closeStage();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeStage();
+});
+
+createStarfield();
+createDesktopMap();
+createMobileGrid();
+</script>
+
+</body>
+</html>

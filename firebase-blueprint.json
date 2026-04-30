@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "Settings": {
+      "title": "App Settings",
+      "description": "Global configuration for the application",
+      "type": "object",
+      "properties": {
+        "coverBackgroundUrl": {
+          "type": "string",
+          "description": "URL for the cover page background image"
+        },
+        "mapBackgroundUrl": {
+          "type": "string",
+          "description": "URL for the map background image (Floating Islands)"
+        }
+      },
+      "required": ["coverBackgroundUrl", "mapBackgroundUrl"]
+    },
+    "Location": {
+      "title": "Music Island Location",
+      "description": "Data for a specific music island/location",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "characterName": { "type": "string" },
+        "hitArea": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "w": { "type": "number" },
+            "h": { "type": "number" }
+          }
+        },
+        "character": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "width": { "type": "number" },
+            "image": { "type": "string" }
+          }
+        },
+        "description": { "type": "string" },
+        "playlist": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "underConstruction": { "type": "boolean" }
+      },
+      "required": ["id", "name", "nameEn", "characterName", "hitArea", "character", "coverImage", "description", "playlist"]
+    }
+  },
+  "firestore": {
+    "config/general": {
+      "schema": "Settings",
+      "description": "General application settings"
+    },
+    "locations/{locationId}": {
+      "schema": "Location",
+      "description": "Individual music island data"
+    }
+  }
+}
