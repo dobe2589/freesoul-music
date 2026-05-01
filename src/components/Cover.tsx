@@ -212,20 +212,13 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
             onClick={() => setSelectedCharacter(null)}
           >
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-4xl bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[90vh]"
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-4xl bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[85vh] md:max-h-[90vh]"
               onClick={e => e.stopPropagation()}
             >
-              <button 
-                onClick={() => setSelectedCharacter(null)}
-                className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all"
-              >
-                <X size={20} />
-              </button>
-
-              <div className="w-full md:w-1/2 aspect-square md:aspect-auto h-56 md:h-auto overflow-hidden bg-black/40 shrink-0">
+              <div className="w-full md:w-1/2 aspect-square md:aspect-auto h-48 md:h-auto overflow-hidden bg-black/40 shrink-0 relative">
                 {(selectedCharacter.coverImage || selectedCharacter.character.image) && (
                   <img 
                     src={getDirectImageUrl(selectedCharacter.coverImage || selectedCharacter.character.image)} 
@@ -236,20 +229,30 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent md:hidden" />
               </div>
 
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="p-6 md:p-12 pb-0 shrink-0">
-                  <div className="mb-6">
-                    <span className="text-secondary text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mb-2 block opacity-60">
+              <div className="flex-1 flex flex-col min-h-0 bg-zinc-900 relative">
+                <button 
+                  onClick={() => setSelectedCharacter(null)}
+                  className="absolute top-4 right-4 z-40 w-10 h-10 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all backdrop-blur-md"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="p-6 md:p-12 pb-4 shrink-0">
+                  <div className="mb-4">
+                    <span className="text-secondary text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mb-1 block opacity-60">
                       {selectedCharacter.characterTitle || "島嶼守護者"} · {selectedCharacter.name}
                     </span>
-                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none mb-2 italic">
+                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none mb-1 italic">
                       {selectedCharacter.characterName || selectedCharacter.name}
                     </h2>
-                    <div className="w-16 h-1 bg-gradient-to-r from-accent to-transparent" />
+                    <div className="w-16 h-1 bg-accent/30" />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-scroll custom-scrollbar px-6 md:px-12 overscroll-contain">
+                <div 
+                  className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 overscroll-contain touch-pan-y"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
                   <div className="py-4">
                     <p className="text-white/80 text-base md:text-lg leading-relaxed font-medium italic mb-8">
                       「{selectedCharacter.description}」
@@ -270,13 +273,14 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
                   </div>
                 </div>
 
-                <div className="p-6 md:p-12 pt-0 shrink-0 mt-auto">
+                <div className="p-6 md:p-12 pt-4 border-t border-white/5 shrink-0 mt-auto bg-zinc-900">
                   <button 
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedCharacter(null);
                       onEnter();
                     }}
-                    className="w-full py-4 bg-accent text-black font-black uppercase tracking-[0.2em] text-sm rounded-xl hover:bg-white transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full py-4 bg-accent text-black font-black uppercase tracking-[0.2em] text-sm rounded-xl hover:bg-white transition-all transform active:scale-95 shadow-lg shadow-accent/10 relative z-10 cursor-pointer"
                   >
                     進入FreeSoul宇宙 →
                   </button>
