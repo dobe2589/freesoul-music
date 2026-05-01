@@ -206,7 +206,7 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
 
               <div className="flex-1 p-8 md:p-12 flex flex-col">
                 <div className="mb-6">
-                  <span className="text-accent text-xs font-bold tracking-[0.3em] uppercase mb-2 block opacity-60">岛屿守護者 · {selectedCharacter.name}</span>
+                  <span className="text-accent text-xs font-bold tracking-[0.3em] uppercase mb-2 block opacity-60">{selectedCharacter.characterTitle || '島嶼守護者'} · {selectedCharacter.name}</span>
                   <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none mb-2 italic">
                     {selectedCharacter.characterName}
                   </h2>

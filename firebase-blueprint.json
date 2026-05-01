@@ -25,6 +25,8 @@
         "name": { "type": "string" },
         "nameEn": { "type": "string" },
         "characterName": { "type": "string" },
+        "characterTitle": { "type": "string" },
+        "isArchive": { "type": "boolean" },
         "hitArea": {
           "type": "object",
           "properties": {

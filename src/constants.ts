@@ -3,16 +3,18 @@ export interface LocationData {
   name: string;
   nameEn: string;
   characterName: string;
+  characterTitle?: string;
   hitArea: { x: number; y: number; w: number; h: number };
   character: { x: number; y: number; width: number; image: string };
   coverImage: string;
   sceneImage?: string;
   description: string;
-  playlist: string;
+  playlist?: string;
   playlists?: { label: string; url: string }[];
   audioPreviews?: { title: string; url: string }[];
   videos?: { title: string; url: string }[];
   underConstruction?: boolean;
+  isArchive?: boolean;
 }
 
 export const LOCATIONS: LocationData[] = [

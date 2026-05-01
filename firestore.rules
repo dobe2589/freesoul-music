@@ -1,69 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Global Safety Net
     match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // --- Helpers ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function isAdmin() {
-      return isSignedIn() && 
-             (request.auth.token.email == "dobe2589@gmail.com" && request.auth.token.email_verified == true);
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    // --- Validation Blueprints ---
-
-    function isValidSettings(data) {
-      return data.keys().hasAll(['coverBackgroundUrl', 'mapBackgroundUrl']) &&
-             data.keys().size() == 2 &&
-             data.coverBackgroundUrl is string && data.coverBackgroundUrl.size() <= 1000 &&
-             data.mapBackgroundUrl is string && data.mapBackgroundUrl.size() <= 1000;
-    }
-
-    function isValidLocation(data) {
-      return data.keys().hasAll(['id', 'name', 'nameEn', 'characterName', 'hitArea', 'character', 'coverImage', 'description', 'playlist']) &&
-             data.id is string && data.id.size() <= 64 &&
-             data.name is string && data.name.size() <= 100 &&
-             data.nameEn is string && data.nameEn.size() <= 100 &&
-             data.characterName is string && data.characterName.size() <= 100 &&
-             data.description is string && data.description.size() <= 500 &&
-             data.playlist is string && data.playlist.size() <= 1000 &&
-             data.coverImage is string && data.coverImage.size() <= 1000 &&
-             data.hitArea is map &&
-             data.hitArea.x is number && data.hitArea.y is number &&
-             data.hitArea.w is number && data.hitArea.h is number &&
-             data.character is map &&
-             data.character.x is number && data.character.y is number &&
-             data.character.width is number && data.character.image is string;
-    }
-
-    // --- Collection Rules ---
-
-    match /config/general {
       allow read: if true;
-      allow write: if isAdmin() && isValidSettings(incoming());
-    }
-
-    match /locations/{locationId} {
-      allow read: if true;
-      allow create, update: if isAdmin() && 
-                             isValidId(locationId) && 
-                             isValidLocation(incoming()) &&
-                             incoming().id == locationId;
-      allow delete: if isAdmin();
+      allow write: if request.auth != null && 
+                    (request.auth.uid == "7pO1pvBK2bRnOerpMgYfU9arVPl1" || 
+                     request.auth.token.email == "dobe2589@gmail.com");
     }
   }
 }
