@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LOCATIONS, LocationData } from '../constants';
 import { auth, db, getDirectImageUrl } from '../lib/firebase';
 import { doc, collection, onSnapshot } from 'firebase/firestore';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight, Youtube, Apple, Disc, Music } from 'lucide-react';
 
 interface CoverProps {
   onEnter: () => void;
@@ -17,6 +17,13 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
   const [bgUrl, setBgUrl] = useState('https://images.unsplash.com/photo-1612975526661-74d4b17f5255?q=80&w=2070&auto=format&fit=crop');
 
   const displayLocations = locations.filter(loc => !['pure-utopia', 'sealed-realm', 'hyakki-yakou'].includes(loc.id));
+
+  const socials = [
+    { name: 'YouTube', icon: <Youtube size={18} />, url: 'https://www.youtube.com/channel/UCvRcnkwJ47y3yLlxEEqXCZQ?sub_confirmation=1' },
+    { name: 'Apple Music', icon: <Apple size={18} />, url: 'https://music.apple.com/tw/artist/freesoul-music/1765920948' },
+    { name: 'Spotify', icon: <Disc size={18} />, url: 'https://open.spotify.com/artist/6HUPlFIrpswTBROfWLNHMN' },
+    { name: 'TikTok', icon: <Music size={18} />, url: 'https://www.tiktok.com/@freesoul_music?is_from_webapp=1&sender_device=pc' },
+  ];
 
   useEffect(() => {
     // Sync settings
@@ -290,6 +297,26 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bottom Social Bar */}
+      <div className="fixed bottom-8 left-8 md:bottom-12 md:left-12 z-50 flex items-center gap-6">
+        {socials.map((social, i) => (
+          <motion.a
+            key={social.name}
+            href={social.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8 + i * 0.1 }}
+            className="text-white/40 hover:text-accent transition-all transform hover:scale-110"
+            title={social.name}
+          >
+            {social.icon}
+          </motion.a>
+        ))}
+        <div className="w-12 h-0.5 bg-white/10 ml-2" />
+      </div>
 
       {/* Bottom Padding */}
       <div className="h-12 w-full" />
