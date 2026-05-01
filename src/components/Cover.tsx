@@ -236,37 +236,41 @@ const Cover: React.FC<CoverProps> = ({ onEnter }) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent md:hidden" />
               </div>
 
-              <div className="flex-1 p-6 md:p-12 flex flex-col overflow-y-auto custom-scrollbar [overscroll-behavior:contain]">
-                <div className="mb-6 shrink-0">
-                  <span className="text-secondary text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mb-2 block opacity-60">
-                    {selectedCharacter.characterTitle || "島嶼守護者"} · {selectedCharacter.name}
-                  </span>
-                  <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none mb-2 italic">
-                    {selectedCharacter.characterName || selectedCharacter.name}
-                  </h2>
-                  <div className="w-16 h-1 bg-gradient-to-r from-accent to-transparent" />
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="p-6 md:p-12 pb-0 shrink-0">
+                  <div className="mb-6">
+                    <span className="text-secondary text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mb-2 block opacity-60">
+                      {selectedCharacter.characterTitle || "島嶼守護者"} · {selectedCharacter.name}
+                    </span>
+                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none mb-2 italic">
+                      {selectedCharacter.characterName || selectedCharacter.name}
+                    </h2>
+                    <div className="w-16 h-1 bg-gradient-to-r from-accent to-transparent" />
+                  </div>
                 </div>
 
-                <div className="flex-1 min-h-0">
-                  <p className="text-white/80 text-base md:text-lg leading-relaxed font-medium italic mb-8">
-                    「{selectedCharacter.description}」
-                  </p>
+                <div className="flex-1 overflow-y-scroll custom-scrollbar px-6 md:px-12 overscroll-contain">
+                  <div className="py-4">
+                    <p className="text-white/80 text-base md:text-lg leading-relaxed font-medium italic mb-8">
+                      「{selectedCharacter.description}」
+                    </p>
 
-                  <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                      <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-1 font-bold">Location</span>
-                      <span className="text-xs md:text-sm text-white/80 font-bold">{selectedCharacter.nameEn || selectedCharacter.id}</span>
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                      <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-1 font-bold">Status</span>
-                      <span className={`text-xs md:text-sm font-bold ${selectedCharacter.underConstruction ? 'text-amber-400' : 'text-accent'}`}>
-                        {selectedCharacter.underConstruction ? 'Sealed' : 'Active'}
-                      </span>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                        <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-1 font-bold">Location</span>
+                        <span className="text-xs md:text-sm text-white/80 font-bold">{selectedCharacter.nameEn || selectedCharacter.id}</span>
+                      </div>
+                      <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                        <span className="block text-[10px] uppercase tracking-widest text-white/30 mb-1 font-bold">Status</span>
+                        <span className={`text-xs md:text-sm font-bold ${selectedCharacter.underConstruction ? 'text-amber-400' : 'text-accent'}`}>
+                          {selectedCharacter.underConstruction ? 'Sealed' : 'Active'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-8 shrink-0">
+                <div className="p-6 md:p-12 pt-0 shrink-0 mt-auto">
                   <button 
                     onClick={() => {
                       setSelectedCharacter(null);
