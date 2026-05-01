@@ -32,16 +32,17 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(122, 240, 255, 0.2);
+    background: rgba(122, 240, 255, 0.4);
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(122, 240, 255, 0.4);
+    background: rgba(122, 240, 255, 0.6);
   }
 }
