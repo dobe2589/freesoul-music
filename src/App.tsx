@@ -9,12 +9,14 @@ import { LOCATIONS, LocationData } from './constants';
 import { X, Youtube, Music, ExternalLink, Star, Shield, ChevronLeft } from 'lucide-react';
 import Cover from './components/Cover';
 import Admin from './components/Admin';
+import Timeline from './components/Timeline';
 import { db, getDirectImageUrl } from './lib/firebase';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
+import { History } from 'lucide-react';
 
 export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
-  const [view, setView] = useState<'cover' | 'map'>('cover');
+  const [view, setView] = useState<'cover' | 'map' | 'timeline'>('cover');
   const [locations, setLocations] = useState<LocationData[]>(LOCATIONS);
   const mapLocations = locations.filter(loc => !loc.isArchive);
   const archiveLocations = locations.filter(loc => loc.isArchive);
@@ -88,6 +90,16 @@ export default function App() {
           >
             <Cover onEnter={goToMap} />
           </motion.div>
+        ) : view === 'timeline' ? (
+          <motion.div
+            key="timeline"
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Timeline onBack={() => setView('map')} />
+          </motion.div>
         ) : (
           <motion.div
             key="map"
@@ -96,14 +108,24 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="relative h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth custom-scrollbar overflow-x-hidden"
           >
-            {/* Back Button */}
-            <button 
-              onClick={goToCover}
-              className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all text-white/60 hover:text-white"
-            >
-              <ChevronLeft size={16} />
-              <span className="text-[10px] font-bold tracking-widest uppercase">返回封面</span>
-            </button>
+            {/* Navigation Buttons */}
+            <div className="fixed top-6 left-6 z-50 flex items-center gap-3">
+              <button 
+                onClick={goToCover}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all text-white/60 hover:text-white"
+              >
+                <ChevronLeft size={16} />
+                <span className="text-[10px] font-bold tracking-widest uppercase text-white/60">回封面</span>
+              </button>
+              
+              <button 
+                onClick={() => setView('timeline')}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-full transition-all text-purple-400 font-bold group"
+              >
+                <History size={16} className="group-hover:rotate-[-20deg] transition-transform" />
+                <span className="text-[10px] tracking-widest uppercase">宇宙紀事</span>
+              </button>
+            </div>
 
             {/* Admin Toggle (Bottom Left) */}
             {!showAdmin && (

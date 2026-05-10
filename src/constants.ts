@@ -17,6 +17,24 @@ export interface LocationData {
   isArchive?: boolean;
 }
 
+export interface TimelineEvent {
+  id: string;
+  year: string;
+  title: string;
+  description: string;
+  label?: string;
+  type: 'main' | 'branch';
+  branchId?: string;
+  parentId?: string; // The event this branch sprouts from
+  media?: {
+    type: 'video' | 'playlist';
+    url: string;
+    title: string;
+  }[];
+  image?: string;
+  order: number;
+}
+
 export const LOCATIONS: LocationData[] = [
   {
     id: 'paper-world',

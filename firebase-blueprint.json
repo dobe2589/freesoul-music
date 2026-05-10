@@ -51,6 +51,33 @@
         "underConstruction": { "type": "boolean" }
       },
       "required": ["id", "name", "nameEn", "characterName", "hitArea", "character", "coverImage", "description", "playlist"]
+    },
+    "TimelineEvent": {
+      "title": "Timeline Event",
+      "description": "An event in the FreeSoul Universe timeline",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "year": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["main", "branch"] },
+        "parentId": { "type": "string" },
+        "label": { "type": "string" },
+        "image": { "type": "string" },
+        "order": { "type": "number" },
+        "media": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["id", "year", "title", "description", "type", "order"]
     }
   },
   "firestore": {
@@ -61,6 +88,10 @@
     "locations/{locationId}": {
       "schema": "Location",
       "description": "Individual music island data"
+    },
+    "timeline/{eventId}": {
+      "schema": "TimelineEvent",
+      "description": "FreeSoul Universe timeline events"
     }
   }
 }

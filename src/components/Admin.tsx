@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, googleProvider, handleFirestoreError, OperationType, getDirectImageUrl } from '../lib/firebase';
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { LOCATIONS, LocationData } from '../constants';
-import { Save, LogOut, ChevronLeft, Image as ImageIcon, Music, Type, ExternalLink, X } from 'lucide-react';
+import { LOCATIONS, LocationData, TimelineEvent } from '../constants';
+import { Save, LogOut, ChevronLeft, Image as ImageIcon, Music, Type, ExternalLink, X, GitBranch, History, Trash2 } from 'lucide-react';
 
 const ADMIN_EMAIL = "dobe2589@gmail.com";
 
@@ -28,6 +28,10 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   
   // Locations Data (shadowing constants for local editing)
   const [localLocations, setLocalLocations] = useState<LocationData[]>([]);
+
+  // Timeline Data
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [activeTab, setActiveTab] = useState<'locations' | 'timeline'>('locations');
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -54,16 +58,19 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       // Fetch Locations
       const locsSnap = await getDocs(collection(db, 'locations'));
       if (locsSnap.empty) {
-        // Initial bootstrap from constants
         setLocalLocations(LOCATIONS.map(l => ({ ...l })));
       } else {
         const fetched = locsSnap.docs.map(d => d.data() as LocationData);
-        
-        // Use fetched data as primary
         const remoteIds = new Set(fetched.map(f => f.id));
         const missingFromRemote = LOCATIONS.filter(l => !remoteIds.has(l.id));
-        
         setLocalLocations([...fetched, ...missingFromRemote]);
+      }
+
+      // Fetch Timeline
+      const timelineSnap = await getDocs(collection(db, 'timeline'));
+      if (!timelineSnap.empty) {
+        const fetched = timelineSnap.docs.map(d => ({ ...d.data(), id: d.id } as TimelineEvent));
+        setTimelineEvents(fetched.sort((a, b) => a.order - b.order));
       }
     } catch (e) {
       console.error(e);
@@ -137,6 +144,91 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveTimelineEvent = async (event: TimelineEvent) => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      // Ensure data is clean
+      const cleanData = JSON.parse(JSON.stringify(event));
+      if (!Array.isArray(cleanData.media)) cleanData.media = [];
+      
+      await setDoc(doc(db, 'timeline', event.id), cleanData);
+      
+      // Update local state to ensure it's in sync
+      setTimelineEvents(prev => prev.map(e => e.id === event.id ? cleanData : e));
+      
+      setFeedback({ msg: `時間軌事件「${event.title}」已儲存！`, type: 'success' });
+    } catch (e: any) {
+      console.error('Timeline save error:', e);
+      setFeedback({ msg: `儲存失敗！${e.message}`, type: 'error' });
+      handleFirestoreError(e, OperationType.WRITE, `timeline/${event.id}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAllTimeline = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const batchPromises = timelineEvents.map(event => {
+        const cleanData = JSON.parse(JSON.stringify(event));
+        if (!Array.isArray(cleanData.media)) cleanData.media = [];
+        return setDoc(doc(db, 'timeline', event.id), cleanData);
+      });
+      await Promise.all(batchPromises);
+      setFeedback({ msg: '所有時間軌事件已同步至雲端！', type: 'success' });
+    } catch (e: any) {
+      setFeedback({ msg: `儲存失敗！${e.message}`, type: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteTimelineEvent = async (id: string, title: string) => {
+    if (!user) return;
+    
+    // First click: set state to confirm
+    if (deletingId !== id) {
+      setDeletingId(id);
+      // Reset after 3 seconds
+      setTimeout(() => setDeletingId(prev => prev === id ? null : prev), 3000);
+      return;
+    }
+
+    // Second click: perform delete
+    setSaving(true);
+    try {
+      console.log('Explicitly deleting timeline event:', id);
+      await deleteDoc(doc(db, 'timeline', id));
+      setTimelineEvents(prev => prev.filter(e => e.id !== id));
+      setFeedback({ msg: `已從時間軌移除「${title}」`, type: 'success' });
+      setDeletingId(null);
+    } catch (e: any) {
+      console.error('Timeline delete error:', e);
+      setFeedback({ msg: `刪除失敗！${e.message}`, type: 'error' });
+      handleFirestoreError(e, OperationType.DELETE, `timeline/${id}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addTimelineEvent = () => {
+    const newId = `event-${Date.now()}`;
+    const newEvent: TimelineEvent = {
+      id: newId,
+      year: "20XX",
+      title: "新事件標題",
+      description: "說明此事件發生的內容...",
+      type: 'main',
+      order: timelineEvents.length > 0 ? Math.max(...timelineEvents.map(e => e.order)) + 1 : 0,
+      media: []
+    };
+    setTimelineEvents([...timelineEvents, newEvent]);
   };
 
   const addLocation = () => {
@@ -239,7 +331,29 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
         </header>
 
-        {/* General Settings */}
+        {/* Tab System */}
+        <div className="flex gap-4 mb-12">
+          <button 
+            onClick={() => setActiveTab('locations')}
+            className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border ${
+              activeTab === 'locations' ? 'bg-accent text-black border-accent' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'
+            }`}
+          >
+            音樂宇宙地圖
+          </button>
+          <button 
+            onClick={() => setActiveTab('timeline')}
+            className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border ${
+              activeTab === 'timeline' ? 'bg-purple-500 text-white border-purple-500' : 'bg-white/5 text-white/40 border-white/5 hover:bg-white/10'
+            }`}
+          >
+            宇宙紀事時間軌
+          </button>
+        </div>
+
+        {activeTab === 'locations' ? (
+          <>
+            {/* General Settings */}
         <section className="mb-16">
           <div className="glass p-6 rounded-2xl space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -762,6 +876,216 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </section>
         </div>
+      </>
+    ) : (
+      /* Timeline Management Section */
+      <section className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="flex items-center justify-between border-l-4 border-purple-500 pl-4">
+              <div>
+                <h2 className="text-2xl font-black uppercase italic tracking-widest text-white">宇宙紀事 (Timeline)</h2>
+                <p className="text-purple-400 text-[10px] uppercase font-bold tracking-widest">Branching Universe Narrative</p>
+              </div>
+              <div className="flex gap-4">
+                {timelineEvents.length > 0 && (
+                  <button 
+                    onClick={handleSaveAllTimeline}
+                    disabled={saving}
+                    className="px-6 py-2 border border-purple-500/30 text-purple-400 font-bold text-xs tracking-widest uppercase rounded-full hover:bg-purple-500/10 transition-all"
+                  >
+                    全部儲存
+                  </button>
+                )}
+                <button 
+                  onClick={addTimelineEvent}
+                  className="px-6 py-2 bg-purple-500 text-white font-black text-xs tracking-widest uppercase rounded-full hover:scale-105 transition-transform"
+                >
+                  + 新增時間點
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {timelineEvents.map((event, idx) => (
+                <div key={event.id} className="glass p-8 rounded-3xl border border-white/5 relative group/card">
+                   <div className="absolute top-6 right-6 z-50">
+                     <button 
+                        disabled={saving}
+                        onClick={() => handleDeleteTimelineEvent(event.id, event.title)}
+                        className={`p-3 rounded-xl transition-all shadow-xl flex items-center gap-2 font-black text-xs uppercase tracking-widest ${
+                          deletingId === event.id 
+                            ? 'bg-red-600 text-white animate-pulse' 
+                            : 'bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white'
+                        }`}
+                        title={deletingId === event.id ? "再按一次確認刪除" : "刪除此時間點"}
+                      >
+                        {deletingId === event.id ? '再按一次確認' : <Trash2 size={22} />}
+                      </button>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                       <div className="space-y-4">
+                          <div className="flex gap-4">
+                             <div className="w-24">
+                                <label className="block text-[10px] text-white/30 uppercase mb-2">年份</label>
+                                <input type="text" value={event.year} onChange={e => {
+                                  const next = [...timelineEvents];
+                                  next[idx].year = e.target.value;
+                                  setTimelineEvents(next);
+                                }} className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs font-mono" />
+                             </div>
+                             <div className="flex-1">
+                                <label className="block text-[10px] text-white/30 uppercase mb-2">事件標題</label>
+                                <input type="text" value={event.title} onChange={e => {
+                                  const next = [...timelineEvents];
+                                  next[idx].title = e.target.value;
+                                  setTimelineEvents(next);
+                                }} className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs" />
+                             </div>
+                          </div>
+
+                          <div>
+                             <label className="block text-[10px] text-white/30 uppercase mb-2">類型與關聯</label>
+                             <div className="flex gap-4">
+                               <select 
+                                 value={event.type} 
+                                 onChange={e => {
+                                   const next = [...timelineEvents];
+                                   next[idx].type = e.target.value as 'main' | 'branch';
+                                   setTimelineEvents(next);
+                                 }}
+                                 className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2 text-xs"
+                               >
+                                 <option value="main">主線路徑 (Main)</option>
+                                 <option value="branch">故事分支 (Branch)</option>
+                               </select>
+                               {event.type === 'branch' && (
+                                 <select 
+                                   value={event.parentId || ''} 
+                                   onChange={e => {
+                                     const next = [...timelineEvents];
+                                     next[idx].parentId = e.target.value;
+                                     setTimelineEvents(next);
+                                   }}
+                                   className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-purple-400"
+                                 >
+                                   <option value="">選擇父級事件...</option>
+                                   {timelineEvents.filter(e => e.type === 'main' && e.id !== event.id).map(me => (
+                                     <option key={me.id} value={me.id}>{me.year} - {me.title}</option>
+                                   ))}
+                                 </select>
+                               )}
+                             </div>
+                          </div>
+
+                          <div>
+                             <label className="block text-[10px] text-white/30 uppercase mb-2">故事描述 (劇情內容)</label>
+                             <textarea value={event.description} onChange={e => {
+                               const next = [...timelineEvents];
+                               next[idx].description = e.target.value;
+                               setTimelineEvents(next);
+                             }} className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs h-24 resize-none" />
+                          </div>
+
+                          <div>
+                             <label className="block text-[10px] text-white/30 uppercase mb-2">分支標籤 (僅分支)</label>
+                             <input type="text" value={event.label || ''} onChange={e => {
+                               const next = [...timelineEvents];
+                               next[idx].label = e.target.value;
+                               setTimelineEvents(next);
+                             }} className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs" placeholder="e.g. 虛空線" />
+                          </div>
+                       </div>
+
+                       <div className="space-y-4">
+                          <div>
+                             <label className="block text-[10px] text-white/30 uppercase mb-2">背景圖片 URL</label>
+                             <input type="text" value={event.image || ''} onChange={e => {
+                               const next = [...timelineEvents];
+                               next[idx].image = e.target.value;
+                               setTimelineEvents(next);
+                             }} className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-[10px] font-mono" />
+                          </div>
+
+                          <div className="space-y-4 pt-4 border-t border-white/5">
+                             <div className="flex items-center justify-between">
+                               <span className="text-[10px] text-accent font-bold uppercase tracking-widest">媒體連結 (Playlists/Videos)</span>
+                               <button 
+                                 onClick={() => {
+                                   const next = [...timelineEvents];
+                                   const m = [...(next[idx].media || [])];
+                                   m.push({ title: '', url: '', type: 'playlist' });
+                                   next[idx].media = m;
+                                   setTimelineEvents(next);
+                                 }}
+                                 className="text-[9px] px-2 py-1 bg-white/5 rounded"
+                               >
+                                 + 新增
+                               </button>
+                             </div>
+                             <div className="space-y-2">
+                               {(event.media || []).map((m, mIdx) => (
+                                 <div key={mIdx} className="flex gap-2">
+                                   <input type="text" value={m.title} onChange={e => {
+                                     const next = [...timelineEvents];
+                                     const ml = [...(next[idx].media || [])];
+                                     ml[mIdx].title = e.target.value;
+                                     next[idx].media = ml;
+                                     setTimelineEvents(next);
+                                   }} className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-[10px]" placeholder="標題"/>
+                                   <input type="text" value={m.url} onChange={e => {
+                                     const next = [...timelineEvents];
+                                     const ml = [...(next[idx].media || [])];
+                                     ml[mIdx].url = e.target.value;
+                                     next[idx].media = ml;
+                                     setTimelineEvents(next);
+                                   }} className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-[10px]" placeholder="URL"/>
+                                   <button 
+                                     onClick={() => {
+                                       const next = [...timelineEvents];
+                                       next[idx].media = (next[idx].media || []).filter((_, i) => i !== mIdx);
+                                       setTimelineEvents(next);
+                                     }} 
+                                     className="text-red-500/50 hover:text-red-500 px-1"
+                                     title="移除媒體連結"
+                                   >
+                                     <X size={16} />
+                                   </button>
+                                 </div>
+                               ))}
+                             </div>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                             <div className="flex items-center gap-2">
+                               <label className="text-[9px] text-white/30">排序</label>
+                               <input type="number" value={event.order} onChange={e => {
+                                 const next = [...timelineEvents];
+                                 next[idx].order = Number(e.target.value);
+                                 setTimelineEvents(next);
+                               }} className="w-16 bg-white/5 border border-white/10 rounded p-1 text-xs" />
+                             </div>
+                             <button 
+                               onClick={() => handleSaveTimelineEvent(event)}
+                               disabled={saving}
+                               className="px-6 py-2 bg-purple-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all"
+                             >
+                               {saving ? 'Saving...' : '儲存事件'}
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+                </div>
+              ))}
+              
+              {timelineEvents.length === 0 && (
+                <div className="py-20 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center gap-6">
+                  <History className="w-12 h-12 text-white/5" />
+                  <p className="text-white/20 text-xs italic uppercase tracking-[0.3em]">尚未建立任何敘事事件</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
