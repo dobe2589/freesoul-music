@@ -127,7 +127,7 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     if (cleanData.underConstruction === undefined) cleanData.underConstruction = false;
     if (cleanData.isArchive === undefined) cleanData.isArchive = false;
 
-    console.log(`Saving document ${loc.id} for user ${currentUser.uid} (${currentUser.email})`);
+    console.log(`Saving document ${loc.id} for user ${currentUser.uid}`);
     console.log('Payload:', cleanData);
 
     try {
@@ -282,7 +282,7 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
         <div className="max-w-md w-full glass p-8 rounded-2xl text-center">
           <h2 className="text-2xl font-bold text-white mb-6">管理員存取限制</h2>
-          <p className="text-white/60 mb-8 text-sm">請使用授權帳號登入 ({ADMIN_EMAIL})</p>
+          <p className="text-white/60 mb-8 text-sm">請使用授權帳號登入</p>
           <button 
             onClick={handleLogin}
             className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-white/90 transition-colors"
