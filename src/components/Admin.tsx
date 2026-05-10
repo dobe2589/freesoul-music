@@ -24,6 +24,7 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   // Settings
   const [coverBg, setCoverBg] = useState('');
   const [mapBg, setMapBg] = useState('');
+  const [socialLinks, setSocialLinks] = useState<{name: string, url: string}[]>([]);
   
   // Locations Data (shadowing constants for local editing)
   const [localLocations, setLocalLocations] = useState<LocationData[]>([]);
@@ -47,6 +48,7 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const data = settingsDoc.data();
         setCoverBg(data.coverBackgroundUrl || '');
         setMapBg(data.mapBackgroundUrl || '');
+        setSocialLinks(data.socialLinks || []);
       }
 
       // Fetch Locations
@@ -82,7 +84,8 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     try {
       await setDoc(doc(db, 'config', 'general'), { 
         coverBackgroundUrl: coverBg,
-        mapBackgroundUrl: mapBg 
+        mapBackgroundUrl: mapBg,
+        socialLinks: socialLinks.filter(l => l.name && l.url) // Clean empty ones
       });
       alert('全域設定儲存成功！');
     } catch (e) {
@@ -238,14 +241,65 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         {/* General Settings */}
         <section className="mb-16">
-          <div className="glass p-6 rounded-2xl grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-[9px] uppercase tracking-widest text-white/40 mb-2 font-bold">封面背景 (URL)</label>
-              <input type="text" value={coverBg} onChange={e => setCoverBg(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs outline-none" />
+          <div className="glass p-6 rounded-2xl space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[9px] uppercase tracking-widest text-white/40 mb-2 font-bold">封面背景 (URL)</label>
+                <input type="text" value={coverBg} onChange={e => setCoverBg(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs outline-none" />
+              </div>
+              <div>
+                <label className="block text-[9px] uppercase tracking-widest text-white/40 mb-2 font-bold">地圖背景 (URL)</label>
+                <input type="text" value={mapBg} onChange={e => setMapBg(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs outline-none" />
+              </div>
             </div>
-            <div>
-              <label className="block text-[9px] uppercase tracking-widest text-white/40 mb-2 font-bold">地圖背景 (URL)</label>
-              <input type="text" value={mapBg} onChange={e => setMapBg(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs outline-none" />
+
+            <div className="pt-4 border-t border-white/5">
+              <label className="block text-[9px] uppercase tracking-widest text-accent font-bold mb-4">主頁社交連結 (Social Links)</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {socialLinks.map((link, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={link.name} 
+                      onChange={e => {
+                        const next = [...socialLinks];
+                        next[idx].name = e.target.value;
+                        setSocialLinks(next);
+                      }} 
+                      placeholder="名稱"
+                      className="w-1/4 bg-black/40 border border-white/10 rounded p-2 text-[10px]"
+                    />
+                    <input 
+                      type="text" 
+                      value={link.url} 
+                      onChange={e => {
+                        const next = [...socialLinks];
+                        next[idx].url = e.target.value;
+                        setSocialLinks(next);
+                      }} 
+                      placeholder="URL 連結"
+                      className="flex-1 bg-black/40 border border-white/10 rounded p-2 text-[10px]"
+                    />
+                    <button onClick={() => setSocialLinks(socialLinks.filter((_, i) => i !== idx))} className="text-red-500/50 hover:text-red-500 px-1">×</button>
+                  </div>
+                ))}
+                <button 
+                  onClick={() => setSocialLinks([...socialLinks, { name: '', url: '' }])}
+                  className="px-4 py-2 border border-dashed border-white/10 rounded-lg text-[9px] uppercase tracking-widest text-white/20 hover:text-white/60 hover:border-white/30 transition-all"
+                >
+                  + 新增社交連結
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <button 
+                disabled={saving}
+                onClick={handleSaveSettings}
+                className="px-6 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Save size={14} /> {saving ? 'SAVING...' : '儲存全域設定'}
+              </button>
             </div>
           </div>
         </section>
@@ -325,6 +379,170 @@ const Admin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             next[globalIdx].description = e.target.value;
                             setLocalLocations(next);
                           }} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm resize-none h-32" />
+                        </div>
+
+                        {/* Media Management for Main Locations */}
+                        <div className="space-y-6 pt-4 border-t border-white/5">
+                          {/* Legacy Single Playlist Field (Keep for data integrity/migration) */}
+                          {loc.playlist && (
+                            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4">
+                              <label className="block text-[10px] text-amber-500 font-bold uppercase mb-2">舊版單一連結 (Legacy Link)</label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text" 
+                                  readOnly 
+                                  value={loc.playlist} 
+                                  className="flex-1 bg-black/20 border border-white/10 rounded p-2 text-[10px] text-white/60"
+                                />
+                                <button 
+                                  onClick={() => {
+                                    const next = [...localLocations];
+                                    const p = [...(next[globalIdx].playlists || [])];
+                                    p.push({ label: 'YouTube 播放清單', url: loc.playlist || '' });
+                                    next[globalIdx].playlists = p;
+                                    next[globalIdx].playlist = ''; // Clear after migration
+                                    setLocalLocations(next);
+                                  }}
+                                  className="px-3 py-1 bg-amber-500 text-black text-[10px] font-bold rounded hover:bg-amber-400 transition-colors"
+                                >
+                                  遷移至新清單
+                                </button>
+                              </div>
+                              <p className="text-[9px] text-amber-500/60 mt-2">檢測到舊版資料，請點擊清單遷移以確保能正確顯示多重連結。</p>
+                            </div>
+                          )}
+
+                          {/* Playlists */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-accent font-bold uppercase tracking-widest">播放清單 (Playlists)</span>
+                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-mono uppercase tracking-[0.2em]">{loc.playlists?.length || 0}</span>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  const next = [...localLocations];
+                                  next[globalIdx].playlists = [...(next[globalIdx].playlists || []), { label: '', url: '' }];
+                                  setLocalLocations(next);
+                                }}
+                                className="text-[10px] text-white/40 hover:text-white px-2 py-1 bg-white/5 rounded"
+                              >
+                                + 新增
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                               {(loc.playlists || []).map((pl, pIdx) => (
+                                 <div key={pIdx} className="flex gap-2">
+                                   <input type="text" value={pl.label} onChange={e => {
+                                     const next = [...localLocations];
+                                     const p = [...(next[globalIdx].playlists || [])];
+                                     p[pIdx].label = e.target.value;
+                                     next[globalIdx].playlists = p;
+                                     setLocalLocations(next);
+                                   }} className="w-1/3 bg-white/5 border border-white/10 rounded p-2 text-xs" placeholder="標題 (如: YouTube)"/>
+                                   <input type="text" value={pl.url} onChange={e => {
+                                     const next = [...localLocations];
+                                     const p = [...(next[globalIdx].playlists || [])];
+                                     p[pIdx].url = e.target.value;
+                                     next[globalIdx].playlists = p;
+                                     setLocalLocations(next);
+                                   }} className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-xs" placeholder="URL 連結"/>
+                                   <button onClick={() => {
+                                     const next = [...localLocations];
+                                     next[globalIdx].playlists = (next[globalIdx].playlists || []).filter((_, i) => i !== pIdx);
+                                     setLocalLocations(next);
+                                   }} className="text-red-500/50 hover:text-red-500 px-2 text-lg">×</button>
+                                 </div>
+                               ))}
+                               {(loc.playlists || []).length === 0 && (
+                                 <p className="text-[10px] text-white/20 italic text-center py-2">尚未設定播放清單</p>
+                               )}
+                            </div>
+                          </div>
+
+                          {/* Audio Previews */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">音軌試聽 (Previews)</span>
+                              <button 
+                                onClick={() => {
+                                  const next = [...localLocations];
+                                  next[globalIdx].audioPreviews = [...(next[globalIdx].audioPreviews || []), { title: '', url: '' }];
+                                  setLocalLocations(next);
+                                }}
+                                className="text-[10px] text-white/40 hover:text-white px-2 py-1 bg-white/5 rounded"
+                              >
+                                + 新增
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                               {(loc.audioPreviews || []).map((ap, aIdx) => (
+                                 <div key={aIdx} className="flex gap-2">
+                                   <input type="text" value={ap.title} onChange={e => {
+                                     const next = [...localLocations];
+                                     const a = [...(next[globalIdx].audioPreviews || [])];
+                                     a[aIdx].title = e.target.value;
+                                     next[globalIdx].audioPreviews = a;
+                                     setLocalLocations(next);
+                                   }} className="w-1/3 bg-white/5 border border-white/10 rounded p-2 text-xs" placeholder="標題"/>
+                                   <input type="text" value={ap.url} onChange={e => {
+                                     const next = [...localLocations];
+                                     const a = [...(next[globalIdx].audioPreviews || [])];
+                                     a[aIdx].url = e.target.value;
+                                     next[globalIdx].audioPreviews = a;
+                                     setLocalLocations(next);
+                                   }} className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-xs" placeholder="URL"/>
+                                   <button onClick={() => {
+                                     const next = [...localLocations];
+                                     next[globalIdx].audioPreviews = (next[globalIdx].audioPreviews || []).filter((_, i) => i !== aIdx);
+                                     setLocalLocations(next);
+                                   }} className="text-red-500/50 hover:text-red-500 px-2 text-lg">×</button>
+                                 </div>
+                               ))}
+                            </div>
+                          </div>
+
+                          {/* Videos */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">精選影片 (Videos)</span>
+                              <button 
+                                onClick={() => {
+                                  const next = [...localLocations];
+                                  next[globalIdx].videos = [...(next[globalIdx].videos || []), { title: '', url: '' }];
+                                  setLocalLocations(next);
+                                }}
+                                className="text-[10px] text-white/40 hover:text-white px-2 py-1 bg-white/5 rounded"
+                              >
+                                + 新增
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                               {(loc.videos || []).map((vd, vIdx) => (
+                                 <div key={vIdx} className="flex gap-2">
+                                   <input type="text" value={vd.title} onChange={e => {
+                                     const next = [...localLocations];
+                                     const v = [...(next[globalIdx].videos || [])];
+                                     v[vIdx].title = e.target.value;
+                                     next[globalIdx].videos = v;
+                                     setLocalLocations(next);
+                                   }} className="w-1/3 bg-white/5 border border-white/10 rounded p-2 text-xs" placeholder="標題"/>
+                                   <input type="text" value={vd.url} onChange={e => {
+                                     const next = [...localLocations];
+                                     const v = [...(next[globalIdx].videos || [])];
+                                     v[vIdx].url = e.target.value;
+                                     next[globalIdx].videos = v;
+                                     setLocalLocations(next);
+                                   }} className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-xs" placeholder="URL"/>
+                                   <button onClick={() => {
+                                     const next = [...localLocations];
+                                     next[globalIdx].videos = (next[globalIdx].videos || []).filter((_, i) => i !== vIdx);
+                                     setLocalLocations(next);
+                                   }} className="text-red-500/50 hover:text-red-500 px-2 text-lg">×</button>
+                                 </div>
+                               ))}
+                            </div>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
